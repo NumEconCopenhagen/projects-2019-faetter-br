@@ -44,6 +44,7 @@ FREMbf = pd.read_csv(io.StringIO(FREMbf.decode('utf-8')),decimal=",",sep=";")
 # In[3]: Data cleaning on hisotrical population
 GAMbf = GAMbf.loc[GAMbf.TID.str[-1]=='1'] #Data is in quaters - we use the first quarter each year 
 GAMbf.TID = GAMbf.TID.str[0:4] #creates a list of year without quarter indicator at the end (2008k1 -> 2008)
+GAMbf.TID = GAMbf.TID.astype(int) #turns year-index into an integer
 GAMbf = GAMbf[GAMbf.ALDER !='I alt'] #drops observations containing the sum across ages.
 GAMbf.loc[GAMbf.HERKOMST=="Personer med dansk oprindelse", 'HERKOMST'] = 'da'
 GAMbf.loc[GAMbf.HERKOMST=="Indvandrere fra vestlige lande", 'HERKOMST'] = 'iw'
@@ -101,7 +102,7 @@ age_temp = pd.DataFrame() #temporary container to create a list of ages
 p=0
 for i in freqalder.iloc[:,0]: #We want to iterate as long as we have age groups
     if i ==1: #if the age group contains two ages (i=17-16 ==1 )
-        freq = freq.append(RAS200.iloc[p,:]) #copies RAS-data so, for instance age 16 and 17 have the same gender, origin and frequency as the age group 16-17
+        freq = freq.append(RAS200.iloc[p,:]) #copies RAS-data so, for instance, age 16 and 17 have the same gender, origin and frequency as the age group 16-17
         freq = freq.append(RAS200.iloc[p,:]) #We do the same for the next age in the interval 
         age_temp = age_temp.append(pd.Series(alder.iloc[p,0]), ignore_index=True) #sets the age_temp equal to the first age of the interval
         age_temp = age_temp.append(pd.Series(alder.iloc[p,0]+1), ignore_index=True) #Adds 1 to the first age of the interval
@@ -118,19 +119,22 @@ for i in freqalder.iloc[:,0]: #We want to iterate as long as we have age groups
         age_temp = age_temp.append(pd.Series(alder.iloc[p,0]+3), ignore_index=True)
         age_temp = age_temp.append(pd.Series(alder.iloc[p,0]+4), ignore_index=True)
         p=p+1 
-freq.index = range(len(freq)) #Append keeps the old index - We want to concatenate later using a different index.
+freq.index = range(len(freq)) #Append keeps the old index - We want to concatenate using a different index.
+freq = freq.drop(columns = ['age']) #we do not need the old age group anymore
 age_temp.rename(columns = {0:"age"}, inplace=True) #rename the collum to "age" 
-freq = pd.concat([freq, age_temp], axis=1)
+freq = pd.concat([freq, age_temp], axis=1) #combining data with the new age list.
 
 # In[10]: Forecasting employment
 
-freq_besk = freq[freq["BEREGNING"] == 'besk']
+#First we need to sort the dataframes, so we can multiply properly with frequencies and population.
 
-
-
-
-
-
+#First: we do not need population data for ages below 16 - child labour is forbidden. We do not have frequencies for ages above 64 - population is discarded
+GAMbf1664 = GAMbf[(GAMbf.age>=16) &(GAMbf.age<=64)]
+freq_besk = freq[freq['activ']=='besk']
+freq_uab = freq[freq['activ']=='uab']
+freq_besk = freq_besk.sort_values(by=['year','age', 'origin', 'gender'])
+freq_uab = freq_uab.sort_values(by=['year','age', 'origin', 'gender'])
+GAMbf1664 = GAMbf1664.sort_values(by=['year','age', 'origin', 'gender'])
 
 
 
