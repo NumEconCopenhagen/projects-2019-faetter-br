@@ -1,3 +1,3 @@
 # Modelproject
 
-Should contain a short introduction to your project, and show how to produce your results.
+The jupyter-notebook 'CGE_model.ipynb' constructs and solves a simple CGE-model.
